@@ -1,3 +1,7 @@
+# messy files on redirect
+# necessary fields from requests
+# preliminary filtering?
+
 import asyncio
 import json
 from datetime import datetime
@@ -9,8 +13,10 @@ from playwright.async_api import async_playwright
 def get_log_filename(url):
     parsed = urlparse(url)
     domain = parsed.netloc.replace(".", "_")
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return f"requests_{domain}_{timestamp}.json"
+    path = parsed.path.replace("/", "_").strip("_")
+    if path:
+        domain = f"{domain}_{path}"
+    return f"requests_{domain}.json"
 
 
 async def capture_requests(url="https://nytimes.com"):
@@ -47,6 +53,8 @@ async def capture_requests(url="https://nytimes.com"):
                 current_url = response.url
                 print(f"\nNavigated to: {current_url}")
                 print(f"Logging requests to: {get_log_filename(current_url)}")
+                with open(get_log_filename(current_url), "w") as f:
+                    json.dump([], f)
 
         page.on("request", handle_request)
         page.on("framenavigated", handle_navigation)
@@ -63,7 +71,7 @@ async def capture_requests(url="https://nytimes.com"):
         except KeyboardInterrupt:
             print("\nSaving final request logs...")
             for url, data in page_requests.items():
-                with open(data["log_file"], "w") as f:
+                with open(data["log_file"], "a") as f:
                     json.dump(data["requests"], f, indent=2)
                 print(f"Saved requests for {url} to {data['log_file']}")
 
