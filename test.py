@@ -1,4 +1,3 @@
-# messy files on redirect
 # necessary fields from requests
 # preliminary filtering?
 
@@ -19,48 +18,59 @@ def get_log_filename(url):
     return f"requests_{domain}.json"
 
 
+class RequestLogger:
+    def __init__(self):
+        self.page_requests = {}
+        self.current_main_url = None
+
+    def get_or_create_log(self, url):
+        if url not in self.page_requests:
+            self.page_requests[url] = {
+                "requests": [],
+                "log_file": get_log_filename(url),
+            }
+            with open(self.page_requests[url]["log_file"], "w") as f:
+                json.dump([], f)
+
+        return self.page_requests[url]
+
+    async def handle_request(self, request):
+        if not self.current_main_url:
+            return
+
+        log_data = self.get_or_create_log(self.current_main_url)
+        request_data = {
+            "timestamp": datetime.now().isoformat(),
+            "method": request.method,
+            "url": request.url,
+            "headers": request.headers,
+            "post_data": request.post_data,
+        }
+        log_data["requests"].append(request_data)
+
+        # Save to page-specific log file
+        with open(log_data["log_file"], "a") as f:
+            json.dump(log_data["requests"], f, indent=2)
+
+    async def handle_navigation(self, response):
+        if response and response == response.page.main_frame:
+            self.current_main_url = response.url
+            print(f"\nNavigated to: {self.current_main_url}")
+            print(f"Logging requests to: {get_log_filename(self.current_main_url)}")
+            self.get_or_create_log(self.current_main_url)
+
+
 async def capture_requests(url="https://nytimes.com"):
-    page_requests = {}
-    current_url = None
+    logger = RequestLogger()
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=False)
         page = await browser.new_page()
 
-        async def handle_request(request):
-            if current_url not in page_requests:
-                page_requests[current_url] = {
-                    "requests": [],
-                    "log_file": get_log_filename(current_url),
-                }
-
-            request_data = {
-                "timestamp": datetime.now().isoformat(),
-                "method": request.method,
-                "url": request.url,
-                "headers": request.headers,
-                "post_data": request.post_data,
-            }
-            page_requests[current_url]["requests"].append(request_data)
-
-            # Save to page-specific log file
-            with open(page_requests[current_url]["log_file"], "w") as f:
-                json.dump(page_requests[current_url]["requests"], f, indent=2)
-
-        async def handle_navigation(response):
-            if response:
-                nonlocal current_url
-                current_url = response.url
-                print(f"\nNavigated to: {current_url}")
-                print(f"Logging requests to: {get_log_filename(current_url)}")
-                with open(get_log_filename(current_url), "w") as f:
-                    json.dump([], f)
-
-        page.on("request", handle_request)
-        page.on("framenavigated", handle_navigation)
+        page.on("request", logger.handle_request)
+        page.on("framenavigated", logger.handle_navigation)
 
         # Set initial URL and navigate
-        current_url = url
         await page.goto(url, wait_until="networkidle")
         print(f"Browser is open and logging requests from {url}")
         print("Navigate freely. Press Ctrl+C to end the session.")
@@ -70,7 +80,7 @@ async def capture_requests(url="https://nytimes.com"):
                 await asyncio.sleep(1)
         except KeyboardInterrupt:
             print("\nSaving final request logs...")
-            for url, data in page_requests.items():
+            for url, data in logger.page_requests.items():
                 with open(data["log_file"], "a") as f:
                     json.dump(data["requests"], f, indent=2)
                 print(f"Saved requests for {url} to {data['log_file']}")
