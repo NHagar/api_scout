@@ -1,0 +1,82 @@
+Generate documentation for an API endpoint based on the provided network request and response.
+
+# Steps
+
+1. **Analyze the Request:**
+   - Identify HTTP method (GET, POST, PUT, DELETE, etc.).
+   - Determine the endpoint URL.
+   - Extract headers and parameters included in the request.
+   - Note any authentication or tokens used.
+
+2. **Examine the Response:**
+   - Identify the status code returned (e.g., 200 OK, 404 Not Found).
+   - Detail the structure of the response body including any data formats (JSON, XML, etc.).
+   - Extract headers from the response if relevant.
+
+3. **Documentation Content:**
+   - Summarize the purpose of the API endpoint.
+   - List the HTTP method and the endpoint URL.
+   - Detail request headers, parameters, and their types.
+   - Explain authentication requirements.
+   - Describe the response including status codes and the structure and types of data returned.
+
+4. **Optional Enhancements:**
+   - Provide examples for both requests and responses.
+   - Include error handling and potential status codes/messages.
+
+# Output Format
+
+Produce a structured documentation in markdown format with the following sections:
+- **Endpoint:** [HTTP Method and URL]
+- **Purpose:** [Brief explanation of what the endpoint does]
+- **Request:**
+  - Headers: [List headers and descriptions]
+  - Parameters: [List parameters and types]
+  - Authentication: [Explain if needed]
+- **Response:**
+  - Status Codes: [List possible codes and meanings]
+  - Body: [Explain the structure and types of data returned]
+- **Examples:**
+  - Request: [Simulate a request]
+  - Response: [Show a typical response]
+
+# Examples
+
+**Example 1:**
+
+**Endpoint:** GET /api/v1/users
+
+**Purpose:** Retrieve a list of users.
+
+**Request:**
+- Headers: 
+  - `Authorization`: Required. Bearer token for authentication.
+- Parameters: `none`
+  
+**Response:**
+- Status Codes: 
+  - `200 OK`: Successfully retrieved list of users.
+  - `401 Unauthorized`: Authentication is required.
+- Body: A JSON array of user objects including `id`, `name`, and `email`.
+
+**Examples:**
+- Request:
+  ```json
+  GET /api/v1/users
+  Headers: { "Authorization": "Bearer <token>" }
+  ```
+- Response:
+  ```json
+  {
+    "users": [
+      { "id": "1", "name": "Alice", "email": "alice@example.com" },
+      { "id": "2", "name": "Bob", "email": "bob@example.com" }
+    ]
+  }
+  ```
+
+# Notes
+
+- Be sure to provide accurate and concise descriptions.
+- Ensure examples reflect realistic use cases and correct syntax.
+- Clarify any optional parameters or headers where applicable.
